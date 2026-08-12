@@ -410,10 +410,10 @@ body {
       equalRule: "= two connected squares must match",
       crossRule: "× two connected squares must be different",
       noTripleRule: "No more than two matching squares can sit beside each other in a row or column",
-      solvedTitle: "Solved 🌟",
-      solvedText: "LET'S GOOO! Keep it up!",
-      finalTitle: "ALL DONE! 💖",
-      finalText: "WOWIE good job!",
+      solvedTitle: "Solved! 💖",
+      solvedText: "Keep it up!",
+      finalTitle: "You did it 💖",
+      finalText: "Good job!",
       nextLevel: "Next Level",
       undo: "Undo",
       reset: "Reset",
@@ -757,12 +757,12 @@ body {
     const isLastLevel = currentLevelIndex === levels.length - 1;
 
     if (isLastLevel) {
-      solvedImage.src = "https://i.imgur.com/EGSGSyp.gif";
+      solvedImage.src = "https://i.imgur.com/qYo5vK7.png";
       solvedTitle.textContent = t.finalTitle;
       solvedText.innerHTML = `${t.finalText}<br><strong>${t.finalTime}: ${formatTime(elapsedMs)}</strong>`;
       nextLevelBtn.style.display = "none";
     } else {
-      solvedImage.src = "https://i.imgur.com/wePo60P.gif";
+      solvedImage.src = "https://i.imgur.com/IIsEOdz.png";
       solvedTitle.textContent = t.solvedTitle;
       solvedText.textContent = t.solvedText;
       nextLevelBtn.textContent = t.nextLevel;
