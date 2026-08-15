@@ -389,6 +389,8 @@ body {
 
   let currentLang = "en";
   let timerInterval = null;
+  let validationTimer = null;
+  const VALIDATION_DELAY = 1200;
   let startTime = null;
   let elapsedMs = 0;
   let gameStarted = false;
@@ -774,11 +776,31 @@ body {
   }
 
   langToggleBtn.onclick = () => {
+    cancelPendingValidation();
     currentLang = currentLang === "en" ? "zh" : "en";
     applyLanguage();
+    if (gameStarted && !gameFinished && !solvedOverlay.classList.contains("show")) {
+      scheduleDelayedValidation();
+    }
   };
 
+  function cancelPendingValidation() {
+    if (validationTimer !== null) {
+      clearTimeout(validationTimer);
+      validationTimer = null;
+    }
+  }
+
+  function scheduleDelayedValidation() {
+    cancelPendingValidation();
+    validationTimer = setTimeout(() => {
+      validationTimer = null;
+      validate(true);
+    }, VALIDATION_DELAY);
+  }
+
   function loadLevel(index) {
+    cancelPendingValidation();
     const level = levels[index];
 
     startingGrid = level.startingGrid;
@@ -800,7 +822,7 @@ body {
     history.push(grid.map(row => [...row]));
   }
 
-  function render() {
+  function render(shouldShowErrors = true) {
     gridEl.innerHTML = "";
 
     for (let r = 0; r < size; r++) {
@@ -826,7 +848,9 @@ body {
           else if (grid[r][c] === SUN) grid[r][c] = MOON;
           else grid[r][c] = EMPTY;
 
-          render();
+          cancelPendingValidation();
+          const solved = render(false);
+          if (!solved) scheduleDelayedValidation();
         };
 
         gridEl.appendChild(cell);
@@ -834,8 +858,9 @@ body {
     }
 
     renderConstraints();
-    validate();
+    const solved = validate(shouldShowErrors);
     undoBtn.disabled = history.length === 0;
+    return solved;
   }
 
   function renderConstraints() {
@@ -859,14 +884,14 @@ body {
     });
   }
 
-  function validate() {
+  function validate(showErrors = true) {
     const cells = gridEl.querySelectorAll(".cell");
     cells.forEach(cell => cell.classList.remove("error"));
 
     let hasError = false;
 
     function markError(r, c) {
-      cells[r * size + c].classList.add("error");
+      if (showErrors) cells[r * size + c].classList.add("error");
       hasError = true;
     }
 
@@ -959,21 +984,30 @@ body {
       solvedOverlay.classList.remove("show");
 
       if (hasError) {
-        messageEl.textContent = TEXT[currentLang].error;
-        messageEl.style.color = "#d9534f";
+        if (showErrors) {
+          messageEl.textContent = TEXT[currentLang].error;
+          messageEl.style.color = "#d9534f";
+        } else {
+          messageEl.textContent = "";
+        }
       } else {
         messageEl.textContent = "";
       }
     }
+
+    return complete && !hasError;
   }
 
   undoBtn.onclick = () => {
     if (history.length === 0) return;
+    cancelPendingValidation();
     grid = history.pop();
-    render();
+    const solved = render(false);
+    if (!solved) scheduleDelayedValidation();
   };
 
   resetBtn.onclick = () => {
+    cancelPendingValidation();
     grid = startingGrid.map(row => [...row]);
     history = [];
     solvedOverlay.classList.remove("show");
@@ -989,11 +1023,16 @@ body {
   };
 
   startBtn.onclick = () => {
+    cancelPendingValidation();
     startOverlay.classList.add("hide");
     startTimer();
   };
 
-  window.addEventListener("resize", render);
+  window.addEventListener("resize", () => {
+    cancelPendingValidation();
+    const solved = render(false);
+    if (gameStarted && !gameFinished && !solved) scheduleDelayedValidation();
+  });
 
   applyLanguage();
   updateTimerDisplay();
